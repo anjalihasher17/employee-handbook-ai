@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Handbook QA Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .upload-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #f0f4ff;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 1rem;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .chat-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #fafafa;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        
+        .message.user {
+            background-color: #667eea;
+            color: white;
+            text-align: right;
+            margin-left: 20%;
+        }
+        
+        .message.bot {
+            background-color: white;
+            border: 1px solid #ddd;
+            margin-right: 20%;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .question-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .ask-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .ask-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            margin: 1rem 0;
+        }
+        
+        .file-info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Employee Handbook QA Agent</h1>
+            <p>Upload your employee handbook and ask questions about company policies</p>
+        </div>
+
+        <div class="upload-section">
+            <h3>Upload Employee Handbook</h3>
+            <div class="upload-area" id="uploadArea">
+                <p>📄 Drag and drop your file here or click to select</p>
+                <p style="color: #666; font-size: 14px; margin-top: 8px;">Supported formats: .txt, .pdf, .docx (max 16MB)</p>
+                <input type="file" id="fileInput" class="file-input" accept=".txt,.pdf,.docx">
+                <br><br>
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Choose File
+                </button>
+            </div>
+            <div id="uploadStatus" class="status hidden"></div>
+            <div id="fileInfo" class="file-info hidden"></div>
+        </div>
+
+        <div class="chat-section">
+            <h3>Ask Questions</h3>
+            <div class="file-info hidden" id="conversationInfo">
+                <span id="conversationStatus">💬 Conversation memory active</span>
+                <button onclick="clearHistory()" style="float: right; background: #ff6b6b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear History</button>
+            </div>
+            <div class="chat-container" id="chatContainer">
+                <div class="message bot">
+                    <strong>🤖 Assistant:</strong> Please upload an employee handbook document to start asking questions.
+                </div>
+            </div>
+            <div class="loading" id="loading">
+                <p>🤔 Thinking...</p>
+            </div>
+            <div class="input-group">
+                <input type="text" 
+                       id="questionInput" 
+                       class="question-input" 
+                       placeholder="Ask a question about the employee handbook..." 
+                       disabled>
+                <button id="askBtn" class="ask-btn" onclick="askQuestion()" disabled>Ask</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fileUploaded = false;
+        
+        // Check if document is already loaded
+        fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.loaded) {
+                    fileUploaded = true;
+                    showFileInfo(data.filename);
+                    enableChat();
+                    if (data.has_conversation) {
+                        showConversationInfo(data.conversation_length);
+                    }
+                }
+            });
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const fileInfo = document.getElementById('fileInfo');
+        const questionInput = document.getElementById('questionInput');
+        const askBtn = document.getElementById('askBtn');
+        const chatContainer = document.getElementById('chatContainer');
+        const loading = document.getElementById('loading');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        function handleFileUpload(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            uploadStatus.textContent = 'Uploading and processing document...';
+            uploadStatus.className = 'status';
+            uploadStatus.classList.remove('hidden');
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                } else {
+                    showStatus(data.message, 'success');
+                    showFileInfo(data.filename);
+                    enableChat();
+                    fileUploaded = true;
+                }
+            })
+            .catch(error => {
+                showStatus('Upload failed: ' + error.message, 'error');
+            });
+        }
+
+        function showStatus(message, type) {
+            uploadStatus.textContent = message;
+            uploadStatus.className = `status ${type}`;
+            uploadStatus.classList.remove('hidden');
+        }
+
+        function showFileInfo(filename) {
+            fileInfo.innerHTML = `<strong>📁 Loaded document:</strong> ${filename}`;
+            fileInfo.classList.remove('hidden');
+        }
+
+        function enableChat() {
+            questionInput.disabled = false;
+            askBtn.disabled = false;
+            questionInput.placeholder = "Ask a question about the employee handbook...";
+            
+            // Clear the initial message
+            chatContainer.innerHTML = `
+                <div class="message bot">
+                    <strong>🤖 Assistant:</strong> Document loaded successfully! You can now ask questions about the employee handbook.
+                </div>
+            `;
+        }
+
+        function askQuestion() {
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            // Add user message
+            addMessage(question, 'user');
+            questionInput.value = '';
+            
+            // Show loading
+            loading.style.display = 'block';
+            askBtn.disabled = true;
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ question: question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                askBtn.disabled = false;
+                
+                if (data.error) {
+                    addMessage('Error: ' + data.error, 'bot');
+                } else {
+                    addMessage(data.answer, 'bot');
+                    // Show conversation info if this is the first exchange
+                    if (data.conversation_length === 1) {
+                        showConversationInfo(data.conversation_length);
+                    }
+                    updateConversationCount(data.conversation_length);
+                }
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                askBtn.disabled = false;
+                addMessage('Error: ' + error.message, 'bot');
+            });
+        }
+
+        function addMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            if (type === 'user') {
+                messageDiv.innerHTML = `<strong>👤 You:</strong> ${message}`;
+            } else {
+                messageDiv.innerHTML = `<strong>🤖 Assistant:</strong> ${message}`;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Enter key to ask question
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !askBtn.disabled) {
+                askQuestion();
+            }
+        });
+
+        function showConversationInfo(count) {
+            const conversationInfo = document.getElementById('conversationInfo');
+            conversationInfo.classList.remove('hidden');
+            updateConversationCount(count);
+        }
+
+        function updateConversationCount(count) {
+            const conversationStatus = document.getElementById('conversationStatus');
+            conversationStatus.textContent = `💬 Conversation memory active (${count} exchanges)`;
+        }
+
+        function clearHistory() {
+            if (!confirm('Are you sure you want to clear the conversation history? This cannot be undone.')) {
+                return;
+            }
+
+            fetch('/clear_history', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    // Clear the chat container
+                    chatContainer.innerHTML = `
+                        <div class="message bot">
+                            <strong>🤖 Assistant:</strong> Conversation history has been cleared. You can continue asking questions about the employee handbook.
+                        </div>
+                    `;
+                    // Hide conversation info
+                    document.getElementById('conversationInfo').classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>
