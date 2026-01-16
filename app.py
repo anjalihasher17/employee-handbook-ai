@@ -28,7 +28,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production-987654321')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
